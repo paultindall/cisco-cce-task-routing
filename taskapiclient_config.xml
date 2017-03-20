@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- XML configuration file used by the generic CCE Task API Client.
+     Requests are read from web-app based queues using HTTP GET and long-poll.
+     The requests are in JSON format and data is extracted using standard JSONPath syntax.
+     The configuration for each requester defines how the incoming request data is used for
+     Context Service read/write and for populating tbe Task API request. 
+
+     It defines:
+
+         - Where incoming requests are read from.
+         - The SocialMiner host and feed ID.
+         - The ICM script selector.
+         - What data should be used on Context Service lookup to retrieve customer details.
+         - How the incoming request data and Context Service customer data is mapped into the task request. 
+-->
+
+<taskapi>
+
+    <socialMiner>10.58.16.185</socialMiner>     
+    <debug>true</debug>
+    
+<!-- Enable context service access, specifying necessary connection configuration -->
+
+    <contextService>
+        <enabled>true</enabled>
+        <propertyFileLocation>connector.property</propertyFileLocation>
+        <connectionDataFileLocation>connection.data</connectionDataFileLocation>
+        <hostname>taskapiclient.vtlab.cisco.com</hostname>
+        <mode>lab</mode>
+    </contextService>
+
+<!-- Configure one <requester> config block per task request channel to read from -->
+       
+    <requester>
+        <name>Spark Room Listener</name>
+
+        <readMessageHost>http://ctxsvcgwy-lab.eu-gb.mybluemix.net</readMessageHost>
+        <readMessageQueue>sparktovtlab/ptindall@cisco.com</readMessageQueue>
+
+        <taskFeed>100020</taskFeed>
+        <scriptSelector>SparkMessage</scriptSelector>
+
+        <!-- Task request data mapping, using substitution from the JSON format incoming request.
+             Note that the Context Service lookup inserts an additional JSON block named "context"
+             into the request data so it can be referenced also for field substitution. -->
+
+        <taskData>
+            <title>Incoming Spark message from {$.email} at room {$.room}</title>
+            <name>{$.email}</name>
+            <description>Developing for dCloud SEVT Lab</description>
+            <cv_1>{$.email}</cv_1>
+            <cv_2>{$.context.Context_First_Name} {$.context.Context_Last_Name}</cv_2>
+            <user.sms.text>{$.eventData.text}</user.sms.text>
+            <tag>dCloud</tag>       
+            <tag>uqapi</tag>       
+            <tag>vtlab</tag>       
+            <tag>spark</tag>       
+        </taskData>
+
+        <!-- Specify whether Context Service should be used for this requester.
+             Define customer lookup parameters. -->
+
+        <createPod>true</createPod>
+
+        <customerLookup>
+            <Context_Work_Email>{$.email}</Context_Work_Email>
+        </customerLookup>
+
+        <!-- Define which data is written to the new Context Service PoD for the customer -->
+
+        <podData>
+            <Context_POD_Source_Type>{$.eventType}</Context_POD_Source_Type>
+            <Context_POD_Source_ID>{$.room}</Context_POD_Source_ID>
+            <Context_Notes>{$.eventData.text}</Context_Notes>
+            <Context_POD_Activity_Link>Spark room message in {$.room} notified via webhook {$.webhook}</Context_POD_Activity_Link>
+        </podData>
+    </requester>
+
+
+<!-- Second requester example.  Any number of requesters can be defined and processed in parallel. -->
+
+    <requester>
+        <name>SMS Listener</name>
+
+        <readMessageHost>http://ctxsvcgwy-lab.eu-gb.mybluemix.net</readMessageHost>
+        <readMessageQueue>inboundsms</readMessageQueue>
+
+        <taskFeed>100020</taskFeed>
+        <scriptSelector>TropoSMS</scriptSelector>
+
+        <taskData>
+            <title>Incoming SMS from {$.caller} via Tropo {$.called}</title>
+            <name>{$.caller}</name>
+            <description>Developing for dCloud SEVT Lab</description>
+            <cv_1>{$.caller}</cv_1>
+            <cv_2>{$.context.Context_First_Name} {$.context.Context_Last_Name}</cv_2>
+            <cv_3>{$.context.Demo_Pod_ID}</cv_3>
+            <cv_4>{$.context.Context_Work_Email}</cv_4>
+            <cv_9>{$.dummyfield}</cv_9>
+            <user.sms.text>{$.eventData.smsText}</user.sms.text>
+            <tag>dCloud</tag>       
+            <tag>uqapi</tag>       
+            <tag>vtlab</tag>       
+        </taskData>
+
+        <createPod>true</createPod>
+
+        <customerLookup>
+            <Context_Work_Phone>{$.caller}</Context_Work_Phone>
+            <Context_Mobile_Phone>{$.caller}</Context_Mobile_Phone>
+        </customerLookup>
+
+        <podData>
+            <Context_POD_Source_Type>{$.eventType}</Context_POD_Source_Type>
+            <Context_POD_Source_ID>{$.service}</Context_POD_Source_ID>
+            <Context_Notes>{$.eventData.smsText}</Context_Notes>
+            <Context_POD_Activity_Link>Text from {$.caller} to {$.called}</Context_POD_Activity_Link>
+        </podData>
+    </requester>
+
+</taskapi>
