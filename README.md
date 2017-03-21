@@ -5,7 +5,7 @@ This is a generic CCE Task Routing client that takes incoming JSON format reques
 _What It Does_
 
  - Reads input using long poll on any number of different hosts
- - Connects out rather than listens for incoming connections to make it friendlier for use in internal labs and getting event triggers from the public internet. This does mean you have to implement a cloud message queue or equivalent to read from.
+ - Connects out rather than listens for incoming connections to make it friendlier for use in internal labs when getting event triggers from the public internet. This does mean you have to implement a cloud message queue or equivalent to read from. It currently reads from http://\<hostname\>/readmessage/\<queuename\> using the host and queue name fields specified for the task sources in the config file.
 - Processes incoming requests in JSON format
 - Using a configuration file, extracts incoming JSON data items and maps them to task request fields
 - Issues task requests to SocialMiner
